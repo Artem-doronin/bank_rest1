@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -31,6 +32,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(name = "Card Management", description = "API для управления банковскими картами")
 @SecurityRequirement(name = "Bearer Authentication")
+@Slf4j
 public class CardController {
     private final CardService cardService;
 
@@ -58,6 +60,7 @@ public class CardController {
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @Operation(summary = "Получить все карты пользователя")
     public ResponseEntity<List<CardResponse>> getUserCards(@PathVariable Long userId) {
+        log.info("21312312321");
         return ResponseEntity.ok(cardService.getCardsByUserId(userId));
     }
 

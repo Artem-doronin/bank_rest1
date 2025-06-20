@@ -28,7 +28,7 @@ public class SecurityConfig {
                 .cors().and() // (1) Включаем CORS (если фронтенд на другом домене)
                 .authorizeHttpRequests()
                 .requestMatchers(
-                        "/auth/**",
+                        "/api/auth/**",
                         "/swagger-ui/**", // (2) Если используете Swagger
                         "/v3/api-docs/**" // (3) OpenAPI документация
                 ).permitAll()

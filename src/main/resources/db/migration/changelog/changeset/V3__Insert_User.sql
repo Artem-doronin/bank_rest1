@@ -1,5 +1,5 @@
 INSERT INTO users (username,password,status)
-VALUES ('alex',1234,'ACTIVE'),
+VALUES ('alex','$2a$12$U4bifA9ga/X8SebLlilneO/HRuPRwDMHtMsPONN3xoHL0zeg/a61a','ACTIVE'),
        ('boby',4321,'ACTIVE');
 
 INSERT INTO users_roles (user_id,role_id)
