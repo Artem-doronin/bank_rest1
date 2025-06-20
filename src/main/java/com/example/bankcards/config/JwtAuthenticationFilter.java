@@ -1,5 +1,7 @@
 package com.example.bankcards.config;
 
+import com.example.bankcards.security.CustomUserDetails;
+import com.example.bankcards.security.CustomUserDetailsService;
 import com.example.bankcards.security.JwtTokenProvider;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -11,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -40,10 +43,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(token)) {
             if (tokenProvider.validateToken(token)) {
                 String username = tokenProvider.getUsernameFromJWT(token);
-                log.debug("JWT Token is valid. Username from token: {}", username);
+                log.info("JWT Token is valid. Username from token: {}", username);
 
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                log.debug("UserDetails loaded: username={}, authorities={}", userDetails.getUsername(), userDetails.getAuthorities());
+                log.info("UserDetails loaded: username={}, authorities={}", userDetails.getUsername(), userDetails.getAuthorities());
+
 
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
@@ -54,7 +58,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authentication);
                 log.debug("Authentication set in SecurityContextHolder for user: {}", username);
             } else {
-                log.warn("Invalid JWT token");
+                log.warn("Invalid JWT token1");
             }
         } else {
             log.debug("No JWT token found in request");

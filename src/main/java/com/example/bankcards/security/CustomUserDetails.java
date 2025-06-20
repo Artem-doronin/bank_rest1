@@ -4,12 +4,10 @@ import com.example.bankcards.entity.User;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.context.annotation.Configuration;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 
 import java.util.Collection;
 import java.util.Set;
@@ -17,6 +15,7 @@ import java.util.stream.Collectors;
 
 @Getter
 @AllArgsConstructor
+@Slf4j
 public class CustomUserDetails implements UserDetails {
 
     private Long id;
@@ -25,10 +24,15 @@ public class CustomUserDetails implements UserDetails {
     private Collection<? extends GrantedAuthority> authorities;
 
     public static CustomUserDetails fromUserEntity(User user) {
-        // Преобразуем роли пользователя в GrantedAuthority
         Set<GrantedAuthority> authorities = user.getRoles().stream()
-                .map(role -> new SimpleGrantedAuthority(role.getName()))
-                .collect(Collectors.toSet());  // Собираем в Set<GrantedAuthority>
+                .map(role -> {
+                    String authority = role.getName().toUpperCase();
+                    log.info("Mapping role '{}' to authority '{}'", role.getName(), authority);
+                    return new SimpleGrantedAuthority(authority);
+                })
+                .collect(Collectors.toSet());
+
+        log.info("User '{}' authorities: {}", user.getUsername(), authorities);
 
         return new CustomUserDetails(
                 user.getId(),
@@ -36,7 +40,8 @@ public class CustomUserDetails implements UserDetails {
                 user.getPassword(),
                 authorities
         );
-    }
+        }
+
 
     @Override
     public boolean isAccountNonExpired() {

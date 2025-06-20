@@ -25,7 +25,6 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf().disable()
-                .cors().and() // (1) Включаем CORS (если фронтенд на другом домене)
                 .authorizeHttpRequests()
                 .requestMatchers(
                         "/api/auth/**",
