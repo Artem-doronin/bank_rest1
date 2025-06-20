@@ -5,31 +5,49 @@ import com.example.bankcards.dto.CardResponse;
 import com.example.bankcards.dto.CardStatusUpdateRequest;
 import com.example.bankcards.dto.TransferRequest;
 import com.example.bankcards.dto.TransferResponse;
+import com.example.bankcards.entity.Card;
+import com.example.bankcards.entity.CardStatus;
+import com.example.bankcards.entity.User;
+import com.example.bankcards.exception.CardAlreadyExistsException;
+import com.example.bankcards.exception.CardBlockedException;
+import com.example.bankcards.exception.CardNotFoundException;
+import com.example.bankcards.exception.InsufficientFundsException;
+import com.example.bankcards.exception.UserNotFoundException;
+import com.example.bankcards.repository.CardRepository;
+import com.example.bankcards.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class CardServiceImpl implements CardService {
 
+    private final CardRepository cardRepository;
+    private final UserRepository userRepository;
+
     @Override
-    @Transactional
     public CardResponse createCard(CardCreateRequest request) {
         // Проверка, что карта с таким номером не существует
         if (cardRepository.existsByCardNumber(request.getCardNumber())) {
             throw new CardAlreadyExistsException("Card with this number already exists");
         }
+            User user = userRepository.findById(request.getUserId())
+                    .orElseThrow(()->new UserNotFoundException("User not found"));
 
         Card card = Card.builder()
-                .cardholderName(request.getCardholderName())
                 .cardNumber(request.getCardNumber())
-                .cvv(request.getCvv())
                 .expiryDate(request.getExpiryDate())
-                .userId(request.getUserId())
-                .cardType(request.getCardType())
-                .balance(request.getBalance() != null ? request.getBalance() : 0.0)
-                .isActive(true)
+                .owner(user)
+                .balance(BigDecimal.valueOf(0))
+                .status(CardStatus.ACTIVE)
                 .build();
 
         Card savedCard = cardRepository.save(card);
@@ -42,7 +60,7 @@ public class CardServiceImpl implements CardService {
                 .orElseThrow(() -> new CardNotFoundException("Card not found with ID: " + cardId));
 
         // Проверка прав доступа (только владелец или админ)
-        checkUserAccess(card.getUserId());
+        checkUserAccess(card.getOwner().getId());
 
         return mapToCardResponse(card, showFullNumber);
     }
@@ -52,21 +70,23 @@ public class CardServiceImpl implements CardService {
         // Проверка прав доступа (только владелец или админ)
         checkUserAccess(userId);
 
-        List<Card> cards = cardRepository.findByUserId(userId);
+        User user = userRepository.findById(userId)
+                .orElseThrow(()->new UserNotFoundException("User not found"));
+
+        List<Card> cards = cardRepository.findByOwner(user);
         return cards.stream()
                 .map(card -> mapToCardResponse(card, false)) // Маскируем номер для списка
                 .collect(Collectors.toList());
     }
 
     @Override
-    @Transactional
     public void updateCardStatus(Long cardId, CardStatusUpdateRequest request) {
         Card card = cardRepository.findById(cardId)
                 .orElseThrow(() -> new CardNotFoundException("Card not found with ID: " + cardId));
 
-        checkUserAccess(card.getUserId());
+        checkUserAccess(card.getOwner().getId());
 
-        card.setIsActive(request.getIsActive());
+        card.setStatus(request.getStatus());
         cardRepository.save(card);
     }
 
@@ -80,21 +100,21 @@ public class CardServiceImpl implements CardService {
                 .orElseThrow(() -> new CardNotFoundException("Destination card not found"));
 
         // Проверка, что отправитель — владелец исходной карты
-        checkUserAccess(sourceCard.getUserId());
+        checkUserAccess(sourceCard.getOwner().getId());
 
-        // Проверка, что карта активна
-        if (!sourceCard.getIsActive() || !destinationCard.getIsActive()) {
-            throw new CardBlockedException("One of the cards is blocked");
+        // Проверка, что обе карты активны (ACTIVE)
+        if (sourceCard.getStatus() != CardStatus.ACTIVE || destinationCard.getStatus() != CardStatus.ACTIVE) {
+            throw new CardBlockedException("Одна из карт заблокирована или неактивна");
         }
 
-        // Проверка достаточности средств
-        if (sourceCard.getBalance() < request.getAmount()) {
+        // Проверка достаточности средств (используем compareTo())
+        if (sourceCard.getBalance().compareTo(request.getAmount()) < 0) {
             throw new InsufficientFundsException("Insufficient funds for transfer");
         }
 
-        // Выполнение перевода
-        sourceCard.setBalance(sourceCard.getBalance() - request.getAmount());
-        destinationCard.setBalance(destinationCard.getBalance() + request.getAmount());
+        // Выполнение перевода (используем subtract() и add())
+        sourceCard.setBalance(sourceCard.getBalance().subtract(request.getAmount()));
+        destinationCard.setBalance(destinationCard.getBalance().add(request.getAmount()));
 
         cardRepository.save(sourceCard);
         cardRepository.save(destinationCard);
@@ -110,10 +130,10 @@ public class CardServiceImpl implements CardService {
     @Override
     @Transactional
     public void deleteCard(Long cardId) {
-        Card card = cardRepository.findById(cardId.orElseThrow(() -> new CardNotFoundException("Card not found with ID: " + cardId));
+        Card card = cardRepository.findById(cardId).orElseThrow(() -> new CardNotFoundException("Card not found with ID: " + cardId));
 
                 // Проверка прав доступа (только владелец или админ)
-                checkUserAccess(card.getUserId());
+                checkUserAccess(card.getOwner().getId());
 
         // Мягкое удаление (установка флага isDeleted) или полное удаление
         cardRepository.delete(card); // или card.setDeleted(true); cardRepository.save(card);
@@ -160,13 +180,10 @@ public class CardServiceImpl implements CardService {
 
         return CardResponse.builder()
                 .id(card.getId())
-                .cardholderName(card.getCardholderName())
-                .cardNumber(displayNumber)
+                .maskedCardNumber(displayNumber)
                 .expiryDate(card.getExpiryDate())
-                .cardType(card.getCardType())
                 .balance(card.getBalance())
-                .isActive(card.getIsActive())
-                .userId(card.getUserId())
+                .userId(card.getOwner().getId())
                 .build();
     }
 

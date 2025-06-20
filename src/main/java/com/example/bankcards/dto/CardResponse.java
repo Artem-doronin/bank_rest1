@@ -1,8 +1,12 @@
 package com.example.bankcards.dto;
 
+import com.example.bankcards.entity.CardStatus;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 import lombok.Data;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Builder
 @Data
@@ -10,10 +14,9 @@ import lombok.Data;
 public class CardResponse {
     private Long id;
     private String maskedCardNumber; // Например: "****1234"
-    private String cardholderName;
-    private String expiryDate;
+    private LocalDateTime expiryDate;
     private String cardType;
-    private Double balance;
-    private boolean isActive;
+    private BigDecimal balance;
+    private CardStatus status;
     private Long userId;
 }

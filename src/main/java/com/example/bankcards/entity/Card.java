@@ -6,7 +6,11 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Temporal;
+import jakarta.persistence.TemporalType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -36,41 +40,30 @@ public class Card {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "cardholder_name", nullable = false)
-    private String cardholderName;
-
     @Column(name = "card_number", nullable = false, unique = true, length = 16)
     private String cardNumber;
 
     @Column(name = "expiry_date", nullable = false)
-    private LocalDate expiryDate;
+    private LocalDateTime expiryDate;
 
-    @Column(name = "cvv", nullable = false, length = 3)
-    private String cvv;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "card_type", nullable = false)
-    private CardType cardType;  // VISA, MASTERCARD, etc.
 
     @Column(name = "balance", nullable = false)
     private BigDecimal balance;
 
-    @Column(name = "is_active", nullable = false)
-    private boolean isActive;
+    @Enumerated(EnumType.STRING)
+    private CardStatus status;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    @ManyToOne
+    @JoinColumn(name = "owner_id", nullable = false)
+    private User owner;
 
     @CreationTimestamp
+    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
+    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-    @Column(name = "is_deleted", nullable = false)
-    @Builder.Default
-    private boolean isDeleted = false;  // Для мягкого удаления
-
 }

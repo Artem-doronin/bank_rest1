@@ -1,0 +1,7 @@
+databaseChangeLog:
+  - include:
+      file: db/migration/changelog/changeset/V1__Create_Table.sql
+
+  - include:
+      file: db/migration/changelog/changeset/V2__Insert_Roles.sql
+
