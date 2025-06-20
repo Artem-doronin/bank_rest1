@@ -15,8 +15,11 @@ import com.example.bankcards.exception.InsufficientFundsException;
 import com.example.bankcards.exception.UserNotFoundException;
 import com.example.bankcards.repository.CardRepository;
 import com.example.bankcards.repository.UserRepository;
+import com.example.bankcards.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +31,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CardServiceImpl implements CardService {
 
     private final CardRepository cardRepository;
@@ -164,10 +168,17 @@ public class CardServiceImpl implements CardService {
     /**
      * Получает ID текущего аутентифицированного пользователя.
      */
-    private Long getCurrentUserId() {
-        // Пример: если userId хранится в JWT как строка
-        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
-        return Long.parseLong(userId);
+    public Long getCurrentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            throw new RuntimeException("User is not authenticated");
+        }
+        Object principal = auth.getPrincipal();
+        if (principal instanceof CustomUserDetails) {
+            return ((CustomUserDetails) principal).getId();
+        } else {
+            throw new RuntimeException("Principal is not instance of CustomUserDetails");
+        }//Todo свои исключения
     }
 
     /**

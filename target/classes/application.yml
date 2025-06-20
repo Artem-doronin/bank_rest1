@@ -11,9 +11,9 @@
 spring:
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/postgres
-    username: user
-    password: password
+    url: jdbc:postgresql://localhost:5432/postgres1
+    username: postgres
+    password: 1234
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
@@ -37,3 +37,7 @@ springdoc:
     doc-expansion: none
   api-docs:
     path: /v3/api-docs
+
+jwt:
+  secret: "jwt.secret=your-very-long-secret-key-string-at-least-32-bytes"  # Секретный ключ
+  expiration: 86400000  # 24 часа в миллисекундах
