@@ -1,6 +1,8 @@
 package com.example.bankcards.security;
 
 import com.example.bankcards.exception.JwtAuthenticationException;
+import com.example.bankcards.exception.JwtSecretEmptyException;
+import com.example.bankcards.exception.JwtValidityInvalidException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
@@ -27,15 +29,13 @@ public class JwtTokenProvider {
             @Value("${jwt.secret}") String secret,
             @Value("${jwt.expiration}") long validityInMilliseconds) {
 
-        // Проверка, что секрет не пустой
         if (secret == null || secret.trim().isEmpty()) {
-            throw new IllegalArgumentException("JWT secret key cannot be null or empty");
+            throw new JwtSecretEmptyException("JWT secret key cannot be null or empty");
         }
 
-        // Проверка срока действия токена
         if (validityInMilliseconds <= 0) {
-            throw new IllegalArgumentException("JWT validity must be greater than 0");
-        }//Todo кастомные исключения
+            throw new JwtValidityInvalidException("JWT validity must be greater than 0");
+        }
 
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));  // (1) Явное указание кодировки
         this.validityInMilliseconds = validityInMilliseconds;

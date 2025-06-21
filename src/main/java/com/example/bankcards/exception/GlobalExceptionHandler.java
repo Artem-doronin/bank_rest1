@@ -69,6 +69,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(INTERNAL_SERVER_ERROR)
                 .body(toErrorResponse(ex, INTERNAL_SERVER_ERROR));
     }
+    @ExceptionHandler({
+            JwtSecretEmptyException.class,
+            JwtValidityInvalidException.class
+    })
+    public ResponseEntity<ErrorResponse> handleJwtConfigErrors(RuntimeException ex) {
+        log.warn("JWT configuration error: {}", ex.getMessage());
+        return ResponseEntity.status(BAD_REQUEST).body(toErrorResponse(ex, BAD_REQUEST));
+    }
 
     private ErrorResponse toErrorResponse(Exception ex, HttpStatus status) {
         return ErrorResponse.create(ex, status, ex.getMessage());
