@@ -6,6 +6,7 @@ import com.example.bankcards.dto.CardResponse;
 import com.example.bankcards.dto.CardStatusUpdateRequest;
 import com.example.bankcards.dto.TransferRequest;
 import com.example.bankcards.dto.TransferResponse;
+import com.example.bankcards.dto.UserStatusUpdateRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -27,5 +28,7 @@ public interface CardService {
     List<CardResponse> getAllCards();
 
     Page<CardResponse> getUserCards(CardFilter filter, Pageable pageable);
+
+    void updateUserStatus(Long userId, UserStatusUpdateRequest request);
 }
 

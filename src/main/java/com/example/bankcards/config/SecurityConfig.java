@@ -1,9 +1,7 @@
 package com.example.bankcards.config;
 
 import com.example.bankcards.security.CustomUserDetailsService;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -19,7 +17,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class SecurityConfig {
     private final CustomUserDetailsService userDetailsService;
-    private final   JwtAuthenticationFilter jwtAuthFilter;// (1) Добавляем JWT-фильтр
+    private final JwtAuthenticationFilter jwtAuthFilter;// (1) Добавляем JWT-фильтр
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -50,6 +48,7 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();
     }
+
     @Bean
     public PasswordEncoder passwordEncoder() { // (5) Если используется аутентификация по паролю
         return new BCryptPasswordEncoder();

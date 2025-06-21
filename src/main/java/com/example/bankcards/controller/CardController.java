@@ -1,12 +1,12 @@
 package com.example.bankcards.controller;
 
-
 import com.example.bankcards.dto.CardCreateRequest;
 import com.example.bankcards.dto.CardFilter;
 import com.example.bankcards.dto.CardResponse;
 import com.example.bankcards.dto.CardStatusUpdateRequest;
 import com.example.bankcards.dto.TransferRequest;
 import com.example.bankcards.dto.TransferResponse;
+import com.example.bankcards.dto.UserStatusUpdateRequest;
 import com.example.bankcards.service.CardService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -42,7 +42,6 @@ import java.util.List;
 public class CardController {
     private final CardService cardService;
 
-    // === Создание карты (только ADMIN) ===
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Создать новую карту", description = "Доступно только администраторам")
@@ -50,7 +49,6 @@ public class CardController {
         return ResponseEntity.ok(cardService.createCard(request));
     }
 
-    // === Получение информации о карте ===
     @GetMapping("/{cardId}")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @Operation(summary = "Получить данные карты по ID")
@@ -61,7 +59,6 @@ public class CardController {
         return ResponseEntity.ok(cardService.getCardById(cardId, showFullNumber));
     }
 
-    // === Получение списка карт пользователя ===
     @GetMapping("/user/{userId}")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @Operation(summary = "Получить все карты пользователя")
@@ -69,7 +66,6 @@ public class CardController {
         return ResponseEntity.ok(cardService.getCardsByUserId(userId));
     }
 
-    // === Блокировка/разблокировка карты ===
     @PatchMapping("/{cardId}/status")
     @PreAuthorize("hasAnyRole('ADMIN')")
     @Operation(summary = "Изменить статус карты (активна/заблокирована)")
@@ -81,7 +77,17 @@ public class CardController {
         return ResponseEntity.noContent().build();
     }
 
-    // === Перевод между картами ===
+    @PatchMapping("/{userId}/status")
+    @PreAuthorize("hasAnyRole('ADMIN')")
+    @Operation(summary = "Изменить статус Пользователя (ACTIVE, BLOCKED, DELETED")
+    public ResponseEntity<Void> updateUserStatus(
+            @PathVariable Long userId,
+            @Valid @RequestBody UserStatusUpdateRequest request
+    ) {
+        cardService.updateUserStatus(userId,request);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/transfer")
     @PreAuthorize("hasRole('USER')")
     @Operation(summary = "Перевести средства между картами")
@@ -91,7 +97,6 @@ public class CardController {
         return ResponseEntity.ok(cardService.transferFunds(request));
     }
 
-    // === Удаление карты (ADMIN) ===
     @DeleteMapping("/{cardId}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Удалить карту", description = "Доступно только администраторам")
@@ -100,10 +105,9 @@ public class CardController {
         return ResponseEntity.noContent().build();
     }
 
-    // === Получение списка всех карт  ===
     @GetMapping("/all")
     @PreAuthorize("hasAnyRole( 'ADMIN')")
-    @Operation(summary = "Получить все карты ",description = "Доступно только администраторам")
+    @Operation(summary = "Получить все карты ", description = "Доступно только администраторам")
     public ResponseEntity<List<CardResponse>> getAllCards() {
         return ResponseEntity.ok(cardService.getAllCards());
     }
@@ -113,17 +117,17 @@ public class CardController {
     @Operation(
             summary = "Получить карты пользователя с фильтрацией",
             description = """
-        ### Доступ:
-        - Только владелец карты или Admin.
-        
-        ### Фильтры:
-        - `cardNumber`: Поиск по частичному совпадению номера карты (без учёта регистра).
-        - `page`: Номер страницы (по умолчанию 0).
-        - `size`: Размер страницы (по умолчанию 10).
-        
-        ### Пример:
-        `GET /user/page/1?cardNumber=4242&page=0&size=5`
-        """,
+                    ### Доступ:
+                    - Только владелец карты или Admin.
+                    
+                    ### Фильтры:
+                    - `cardNumber`: Поиск по частичному совпадению номера карты (без учёта регистра).
+                    - `page`: Номер страницы (по умолчанию 0).
+                    - `size`: Размер страницы (по умолчанию 10).
+                    
+                    ### Пример:
+                    `GET /user/page/1?cardNumber=4242&page=0&size=5`
+                    """,
             responses = {
                     @ApiResponse(responseCode = "200", description = "Успешный запрос"),
                     @ApiResponse(responseCode = "204", description = "Нет данных"),
@@ -135,7 +139,6 @@ public class CardController {
             @Parameter(description = "Фильтр по номеру карты (подстрока)") String cardNumber,
             @Parameter(hidden = true) @PageableDefault(size = 10, page = 0) Pageable pageable
     ) {
-        // Создаём фильтр с валидацией
         CardFilter filter = new CardFilter(
                 cardNumber != null ? cardNumber.trim() : null
         );

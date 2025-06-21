@@ -41,7 +41,6 @@ public class JwtTokenProvider {
         this.validityInMilliseconds = validityInMilliseconds;
     }
 
-    // Генерация токена
     public String generateToken(String username) {
         Objects.requireNonNull(username, "Username cannot be null");
 
@@ -56,7 +55,6 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    // Извлечение username из токена
     public String getUsernameFromJWT(String token) {
         try {
             Claims claims = Jwts.parserBuilder()
@@ -75,7 +73,6 @@ public class JwtTokenProvider {
         }
     }
 
-    // Проверка валидности токена
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder()
