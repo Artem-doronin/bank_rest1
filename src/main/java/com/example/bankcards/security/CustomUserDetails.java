@@ -3,7 +3,6 @@ package com.example.bankcards.security;
 import com.example.bankcards.entity.User;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -40,7 +39,7 @@ public class CustomUserDetails implements UserDetails {
                 user.getPassword(),
                 authorities
         );
-        }
+    }
 
     @Override
     public boolean isAccountNonExpired() {

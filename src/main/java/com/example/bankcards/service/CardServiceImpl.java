@@ -1,6 +1,7 @@
 package com.example.bankcards.service;
 
 import com.example.bankcards.dto.CardCreateRequest;
+import com.example.bankcards.dto.CardFilter;
 import com.example.bankcards.dto.CardResponse;
 import com.example.bankcards.dto.CardStatusUpdateRequest;
 import com.example.bankcards.dto.TransferRequest;
@@ -18,6 +19,8 @@ import com.example.bankcards.repository.UserRepository;
 import com.example.bankcards.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -42,8 +45,8 @@ public class CardServiceImpl implements CardService {
         if (cardRepository.existsByCardNumber(request.getCardNumber())) {
             throw new CardAlreadyExistsException("Card with this number already exists");
         }
-            User user = userRepository.findById(request.getUserId())
-                    .orElseThrow(()->new UserNotFoundException("User not found"));
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
 
         Card card = Card.builder()
                 .cardNumber(request.getCardNumber())
@@ -74,7 +77,7 @@ public class CardServiceImpl implements CardService {
         checkUserAccess(userId);
 
         User user = userRepository.findById(userId)
-                .orElseThrow(()->new UserNotFoundException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
 
         List<Card> cards = cardRepository.findByOwner(user);
         return cards.stream()
@@ -131,21 +134,32 @@ public class CardServiceImpl implements CardService {
     }
 
     @Override
-    @Transactional
     public void deleteCard(Long cardId) {
-        Card card = cardRepository.findById(cardId).orElseThrow(() -> new CardNotFoundException("Card not found with ID: " + cardId));
-
-                // Проверка прав доступа (только владелец или админ)
-                checkUserAccess(card.getOwner().getId());
-
-        // Мягкое удаление (установка флага isDeleted) или полное удаление
-        cardRepository.delete(card); // или card.setDeleted(true); cardRepository.save(card);
+        Card card = cardRepository.findById(cardId)
+                .orElseThrow(() -> new CardNotFoundException("Card not found with ID: " + cardId));
+        checkUserAccess(card.getOwner().getId());
+        cardRepository.delete(card);
     }
 
+    @Override
+    public List<CardResponse> getAllCards() {
+        List<Card> cards = cardRepository.findAll();
+        return cards.stream()
+                .map(card -> mapToCardResponse(card, false)) // Маскируем номер для списка
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public Page<CardResponse> getUserCards(CardFilter filter, Pageable pageable) {
+            Page<Card> cardPage = cardRepository.findByUserIdAndCardNumber(getCurrentUserId(),
+                    filter.cardNumber(), pageable);
+            return cardPage.map(this::mapToCardResponseNoFullNumber);
+    }
 // ===== Вспомогательные методы =====
 
     /**
      * Проверяет, имеет ли текущий пользователь доступ к карте.
+     *
      * @param cardUserId ID пользователя, которому принадлежит карта.
      * @throws AccessDeniedException если доступ запрещен.
      */
@@ -182,6 +196,7 @@ public class CardServiceImpl implements CardService {
 
     /**
      * Преобразует сущность Card в CardResponse.
+     *
      * @param showFullNumber Если false, маскирует номер карты (**** **** **** 1234).
      */
     private CardResponse mapToCardResponse(Card card, boolean showFullNumber) {
@@ -191,6 +206,16 @@ public class CardServiceImpl implements CardService {
         return CardResponse.builder()
                 .id(card.getId())
                 .maskedCardNumber(displayNumber)
+                .expiryDate(card.getExpiryDate())
+                .balance(card.getBalance())
+                .userId(card.getOwner().getId())
+                .build();
+    }
+
+    private CardResponse mapToCardResponseNoFullNumber(Card card) {
+        return CardResponse.builder()
+                .id(card.getId())
+                .maskedCardNumber(maskCardNumber(card.getCardNumber()))
                 .expiryDate(card.getExpiryDate())
                 .balance(card.getBalance())
                 .userId(card.getOwner().getId())
