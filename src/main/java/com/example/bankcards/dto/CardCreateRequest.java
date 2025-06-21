@@ -13,7 +13,7 @@ public class CardCreateRequest {
     @Pattern(regexp = "\\d{16}", message = "Card number must be 16 digits")
     private String cardNumber;
 
-    @NotBlank(message = "Expiration date is required (MM/YY)")
+    @NotNull(message = "Expiration date is required (MM/YY)")
     private LocalDateTime expiryDate;
 
     @NotNull(message = "User ID is required")

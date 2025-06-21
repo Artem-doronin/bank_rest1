@@ -77,16 +77,6 @@ public class CardController {
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/{userId}/status")
-    @PreAuthorize("hasAnyRole('ADMIN')")
-    @Operation(summary = "Изменить статус Пользователя (ACTIVE, BLOCKED, DELETED")
-    public ResponseEntity<Void> updateUserStatus(
-            @PathVariable Long userId,
-            @Valid @RequestBody UserStatusUpdateRequest request
-    ) {
-        cardService.updateUserStatus(userId,request);
-        return ResponseEntity.noContent().build();
-    }
 
     @PostMapping("/transfer")
     @PreAuthorize("hasRole('USER')")

@@ -29,6 +29,5 @@ public interface CardService {
 
     Page<CardResponse> getUserCards(CardFilter filter, Pageable pageable);
 
-    void updateUserStatus(Long userId, UserStatusUpdateRequest request);
 }
 
