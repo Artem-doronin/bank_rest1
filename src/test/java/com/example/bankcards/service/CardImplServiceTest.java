@@ -7,6 +7,8 @@ import com.example.bankcards.entity.CardStatus;
 import com.example.bankcards.entity.User;
 import com.example.bankcards.exception.CardAlreadyExistsException;
 import com.example.bankcards.exception.CardNotFoundException;
+import com.example.bankcards.exception.InvalidCardIdException;
+import com.example.bankcards.exception.InvalidUserIdException;
 import com.example.bankcards.exception.UserNotFoundException;
 import com.example.bankcards.repository.CardRepository;
 import com.example.bankcards.repository.UserRepository;
@@ -21,9 +23,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -78,21 +80,48 @@ public class CardImplServiceTest {
         assertEquals(cardResponse.getId(), response1.getId());
 
     }
+    @Test
+    public void testPositiveGetCardByUserId() {
+        User user = createUser();
+        Card card = createCard();
+        doNothing().when(securityAccessService).checkUserAccess(1L);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(cardRepository.findByOwner(user)).thenReturn(List.of(card));
+
+        List<CardResponse> list = cardService.getCardsByUserId(1L);
+
+        assertEquals(list.size(), 1);
+        assertEquals(list.get(0).getId(),card.getId());
+    }
+
+
+
+
 
     @Test
     public void testNegativeGetCardByIdCardNotFound() {
         when(cardRepository.findById(1L)).thenReturn(Optional.empty());
         assertThrows(CardNotFoundException.class, () -> cardService.getCardById(1L, true));
     }
+
+    @Test
+    public void testNegativeGetCardByUserIdUserIdNotFound() {
+        assertThrows(InvalidUserIdException.class, () -> cardService.getCardsByUserId(null));
+    }
+
+    @Test
+    public void testNegativeGetCardByUserIdUserIdNegative() {
+        assertThrows(InvalidUserIdException.class, () -> cardService.getCardsByUserId(-1L));
+    }
+
     @Test
     public void testNegativeGetCardByIdUserIdNotFound() {
-        when(cardRepository.findById(1L)).thenReturn(Optional.empty());
-        assertThrows(CardNotFoundException.class, () -> cardService.getCardById(1L, true));
+        assertThrows(InvalidCardIdException.class, () -> cardService.getCardById(null, true));
     }
+
     @Test
-    public void testNegativeGetCardByIdUserIdPositive() {
-        when(cardRepository.findById(1L)).thenReturn(Optional.empty());
-        assertThrows(CardNotFoundException.class, () -> cardService.getCardById(1L, true));
+    public void testNegativeGetCardByIdUserIdNegative() {
+        assertThrows(InvalidCardIdException.class, () -> cardService.getCardById(-1L, true));
     }
 
     @Test
