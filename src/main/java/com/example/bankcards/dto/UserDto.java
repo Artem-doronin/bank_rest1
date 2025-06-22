@@ -2,7 +2,6 @@ package com.example.bankcards.dto;
 
 import com.example.bankcards.entity.UserStatus;
 import lombok.Builder;
-import lombok.Getter;
 
 import java.util.Set;
 @Builder

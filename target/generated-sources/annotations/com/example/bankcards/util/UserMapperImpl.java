@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-06-22T02:20:19+0500",
+    date = "2025-06-22T13:48:57+0500",
     comments = "version: 1.6.3, compiler: javac, environment: Java 23 (Oracle Corporation)"
 )
 @Component
@@ -21,11 +21,16 @@ public class UserMapperImpl implements UserMapper {
             return null;
         }
 
-        Set<Long> rolesId = mapRolesToIds(user.getRoles());
-        Set<Long> cardsId = mapCardsToIds(user.getCards());
         Long id = null;
         String username = null;
         UserStatus status = null;
+
+        id = user.getId();
+        username = user.getUsername();
+        status = user.getStatus();
+
+        Set<Long> rolesId = mapRolesToIds(user.getRoles());
+        Set<Long> cardsId = mapCardsToIds(user.getCards());
 
         UserDto userDto = new UserDto( id, username, rolesId, cardsId, status );
 

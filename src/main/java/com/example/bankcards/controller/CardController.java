@@ -102,7 +102,7 @@ public class CardController {
         return ResponseEntity.ok(cardService.getAllCards());
     }
 
-    @GetMapping("/user/page/{userId}")
+    @GetMapping("/user/page")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @Operation(
             summary = "Получить карты пользователя с фильтрацией",

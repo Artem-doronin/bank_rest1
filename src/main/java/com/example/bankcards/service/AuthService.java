@@ -34,8 +34,7 @@ public class AuthService {
 
             String token = jwtTokenProvider.generateToken(request.getUsername());
             log.info("JWT token generated for user: {}", request.getUsername());
-            log.debug("Generated token: {}", token);  // Внимание! В продакшене токены лучше не логировать
-
+            log.debug("Generated token: {}", token);
             return AuthResponse.builder()
                     .accessToken(token)
                     .build();

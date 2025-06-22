@@ -14,6 +14,9 @@ import java.util.stream.Collectors;
 
 @Mapper(componentModel = "spring")
 public interface UserMapper {
+    @Mapping(source = "id",target = "id")
+    @Mapping(source = "username",target = "username")
+    @Mapping(source = "status",target = "status")
     @Mapping(target = "rolesId", expression = "java(mapRolesToIds(user.getRoles()))")
     @Mapping(target = "cardsId", expression = "java(mapCardsToIds(user.getCards()))")
     UserDto userToUserDto(User user);
