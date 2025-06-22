@@ -4,6 +4,7 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -57,7 +58,8 @@ public class GlobalExceptionHandler {
                 .body(toErrorResponse(ex, INTERNAL_SERVER_ERROR));
     }
 
-    @ExceptionHandler(JwtAuthenticationException.class)
+    @ExceptionHandler({JwtAuthenticationException.class,
+            BadCredentialsException.class})
     public ResponseEntity<ErrorResponse> handleJwtAuthException(JwtAuthenticationException ex) {
         log.warn("Authentication failed: {}", ex.getMessage());
         return ResponseEntity.status(UNAUTHORIZED).body(toErrorResponse(ex, UNAUTHORIZED));
