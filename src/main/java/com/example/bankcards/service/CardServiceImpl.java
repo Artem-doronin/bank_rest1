@@ -64,9 +64,9 @@ public class CardServiceImpl implements CardService {
                 .status(CardStatus.ACTIVE)
                 .build();
 
-        Card savedCard = cardRepository.save(card);
-        log.info("Карта с ID {} успешно создана для пользователя с ID {}", savedCard.getId(), user.getId());
-        return mapToCardResponse(savedCard, false);
+        cardRepository.save(card);
+        log.info("Карта успешно создана для пользователя с ID {}", user.getId());
+        return mapToCardResponse(card, false);
     }
 
     @Override

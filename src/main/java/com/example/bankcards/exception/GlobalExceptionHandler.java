@@ -32,7 +32,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({
             CardAlreadyExistsException.class,
             IllegalArgumentException.class
-
     })
     public ResponseEntity<ErrorResponse> handleBadRequest(Exception ex) {
         log.warn("Bad request: {}", ex.getMessage());
@@ -53,7 +52,7 @@ public class GlobalExceptionHandler {
             IllegalStateException.class
     })
     public ResponseEntity<ErrorResponse> handleInternalServerError(Exception ex) {
-        log.error("Internal server error (500): ", ex);  // Логируем полный stack trace
+        log.error("Internal server error (500): ", ex);
         return ResponseEntity.status(INTERNAL_SERVER_ERROR)
                 .body(toErrorResponse(ex, INTERNAL_SERVER_ERROR));
     }
@@ -71,6 +70,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(INTERNAL_SERVER_ERROR)
                 .body(toErrorResponse(ex, INTERNAL_SERVER_ERROR));
     }
+
     @ExceptionHandler({
             JwtSecretEmptyException.class,
             JwtValidityInvalidException.class
