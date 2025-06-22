@@ -1,12 +1,16 @@
 package com.example.bankcards.service;
 
 import com.example.bankcards.dto.CardCreateRequest;
+import com.example.bankcards.dto.CardResponse;
 import com.example.bankcards.entity.Card;
+import com.example.bankcards.entity.CardStatus;
 import com.example.bankcards.entity.User;
 import com.example.bankcards.exception.CardAlreadyExistsException;
+import com.example.bankcards.exception.CardNotFoundException;
 import com.example.bankcards.exception.UserNotFoundException;
 import com.example.bankcards.repository.CardRepository;
 import com.example.bankcards.repository.UserRepository;
+import com.example.bankcards.util.SecurityAccessService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -15,13 +19,16 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -33,6 +40,8 @@ public class CardImplServiceTest {
     private CardRepository cardRepository;
     @Mock
     private UserRepository userRepository;
+    @Mock
+    private SecurityAccessService securityAccessService;
     @Captor
     private ArgumentCaptor<Card> cardCaptor;
     @InjectMocks
@@ -56,6 +65,34 @@ public class CardImplServiceTest {
         assertEquals(request.getCardNumber(), capturedCard.getCardNumber());
         assertEquals(request.getExpiryDate(), capturedCard.getExpiryDate());
         assertEquals(user, capturedCard.getOwner());
+    }
+
+    @Test
+    public void testPositiveGetCardById() {
+        CardResponse cardResponse = createCardResponseMask();
+        when(cardRepository.findById(1L)).thenReturn(Optional.of(createCard()));
+        doNothing().when(securityAccessService).checkUserAccess(1L);
+
+        CardResponse response1 = cardService.getCardById(1L, true);
+
+        assertEquals(cardResponse.getId(), response1.getId());
+
+    }
+
+    @Test
+    public void testNegativeGetCardByIdCardNotFound() {
+        when(cardRepository.findById(1L)).thenReturn(Optional.empty());
+        assertThrows(CardNotFoundException.class, () -> cardService.getCardById(1L, true));
+    }
+    @Test
+    public void testNegativeGetCardByIdUserIdNotFound() {
+        when(cardRepository.findById(1L)).thenReturn(Optional.empty());
+        assertThrows(CardNotFoundException.class, () -> cardService.getCardById(1L, true));
+    }
+    @Test
+    public void testNegativeGetCardByIdUserIdPositive() {
+        when(cardRepository.findById(1L)).thenReturn(Optional.empty());
+        assertThrows(CardNotFoundException.class, () -> cardService.getCardById(1L, true));
     }
 
     @Test
@@ -99,6 +136,20 @@ public class CardImplServiceTest {
     private Card createCard() {
         return Card.builder()
                 .id(1L)
+                .owner(User.builder()
+                        .id(1L)
+                        .build())
                 .build();
     }
+
+    private CardResponse createCardResponseMask() {
+        return CardResponse.builder()
+                .maskedCardNumber("1234 1234 1234 1234")
+                .balance(new BigDecimal(200))
+                .status(CardStatus.ACTIVE)
+                .id(1L)
+                .userId(1L)
+                .build();
+    }
+
 }

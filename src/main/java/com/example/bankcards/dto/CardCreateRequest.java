@@ -3,6 +3,7 @@ package com.example.bankcards.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
 import lombok.Builder;
 import lombok.Data;
 
@@ -19,6 +20,7 @@ public class CardCreateRequest {
     private LocalDateTime expiryDate;
 
     @NotNull(message = "User ID is required")
+    @Positive
     private Long userId;
 
 }

@@ -31,6 +31,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({
             CardAlreadyExistsException.class,
+            InvalidCardIdException.class,
+            InvalidUserIdException.class,
             IllegalArgumentException.class
     })
     public ResponseEntity<ErrorResponse> handleBadRequest(Exception ex) {

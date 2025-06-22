@@ -6,7 +6,6 @@ import com.example.bankcards.dto.CardResponse;
 import com.example.bankcards.dto.CardStatusUpdateRequest;
 import com.example.bankcards.dto.TransferRequest;
 import com.example.bankcards.dto.TransferResponse;
-import com.example.bankcards.dto.UserStatusUpdateRequest;
 import com.example.bankcards.entity.Card;
 import com.example.bankcards.entity.CardStatus;
 import com.example.bankcards.entity.User;
@@ -14,18 +13,16 @@ import com.example.bankcards.exception.CardAlreadyExistsException;
 import com.example.bankcards.exception.CardBlockedException;
 import com.example.bankcards.exception.CardNotFoundException;
 import com.example.bankcards.exception.InsufficientFundsException;
-import com.example.bankcards.exception.UserNotAuthenticatedException;
+import com.example.bankcards.exception.InvalidCardIdException;
+import com.example.bankcards.exception.InvalidUserIdException;
 import com.example.bankcards.exception.UserNotFoundException;
 import com.example.bankcards.repository.CardRepository;
 import com.example.bankcards.repository.UserRepository;
-import com.example.bankcards.security.CustomUserDetails;
+import com.example.bankcards.util.SecurityAccessService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,6 +37,7 @@ public class CardServiceImpl implements CardService {
 
     private final CardRepository cardRepository;
     private final UserRepository userRepository;
+    private final SecurityAccessService securityAccessService;
 
     @Override
     public CardResponse createCard(CardCreateRequest request) {
@@ -71,6 +69,8 @@ public class CardServiceImpl implements CardService {
 
     @Override
     public CardResponse getCardById(Long cardId, boolean showFullNumber) {
+        validateCardId(cardId);
+
         log.debug("Запрос карты с ID {}", cardId);
 
         Card card = cardRepository.findById(cardId)
@@ -79,16 +79,17 @@ public class CardServiceImpl implements CardService {
                     return new CardNotFoundException("Карта не найдена с ID: " + cardId);
                 });
 
-        checkUserAccess(card.getOwner().getId());
+        securityAccessService.checkUserAccess(card.getOwner().getId());
 
         return mapToCardResponse(card, showFullNumber);
     }
 
     @Override
     public List<CardResponse> getCardsByUserId(Long userId) {
+        validateUserId(userId);
         log.debug("Получение карт пользователя с ID {}", userId);
 
-        checkUserAccess(userId);
+        securityAccessService.checkUserAccess(userId);
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> {
@@ -105,6 +106,8 @@ public class CardServiceImpl implements CardService {
 
     @Override
     public void updateCardStatus(Long cardId, CardStatusUpdateRequest request) {
+        validateCardId(cardId);
+
         log.info("Обновление статуса карты с ID {} на {}", cardId, request.getStatus());
 
         Card card = cardRepository.findById(cardId)
@@ -113,7 +116,7 @@ public class CardServiceImpl implements CardService {
                     return new CardNotFoundException("Карта не найдена с ID: " + cardId);
                 });
 
-        checkUserAccess(card.getOwner().getId());
+        securityAccessService.checkUserAccess(card.getOwner().getId());
 
         card.setStatus(request.getStatus());
         cardRepository.save(card);
@@ -138,7 +141,7 @@ public class CardServiceImpl implements CardService {
                     return new CardNotFoundException("Целевая карта не найдена");
                 });
 
-        checkUserAccess(sourceCard.getOwner().getId());
+        securityAccessService.checkUserAccess(sourceCard.getOwner().getId());
 
         if (sourceCard.getStatus() != CardStatus.ACTIVE) {
             log.warn("Исходящая карта с ID {} заблокирована или неактивна", sourceCard.getId());
@@ -173,6 +176,7 @@ public class CardServiceImpl implements CardService {
 
     @Override
     public void deleteCard(Long cardId) {
+        validateCardId(cardId);
         log.info("Запрос на удаление карты с ID {}", cardId);
 
         Card card = cardRepository.findById(cardId)
@@ -181,7 +185,7 @@ public class CardServiceImpl implements CardService {
                     return new CardNotFoundException("Карта не найдена с ID: " + cardId);
                 });
 
-        checkUserAccess(card.getOwner().getId());
+        securityAccessService.checkUserAccess(card.getOwner().getId());
 
         cardRepository.delete(card);
         log.info("Карта с ID {} успешно удалена", cardId);
@@ -201,7 +205,7 @@ public class CardServiceImpl implements CardService {
 
     @Override
     public Page<CardResponse> getUserCards(CardFilter filter, Pageable pageable) {
-        Long currentUserId = getCurrentUserId();
+        Long currentUserId = securityAccessService.getCurrentUserId();
         log.debug("Получение страниц карт пользователя с ID {} с фильтром по номеру: {}", currentUserId, filter.cardNumber());
 
         Page<Card> cardPage = cardRepository.findByUserIdAndCardNumber(currentUserId,
@@ -210,44 +214,6 @@ public class CardServiceImpl implements CardService {
         return cardPage.map(this::mapToCardResponseNoFullNumber);
     }
 
-    private void checkUserAccess(Long cardUserId) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) {
-            log.error("Пользователь не аутентифицирован");
-            throw new UserNotAuthenticatedException("Пользователь не аутентифицирован");
-        }
-
-        String currentUserRole = auth.getAuthorities().toString();
-        Long currentUserId = getCurrentUserId();
-
-        if (currentUserRole.contains("ROLE_ADMIN")) {
-            log.debug("Пользователь с ID {} имеет роль ADMIN, доступ разрешён", currentUserId);
-            return;
-        }
-
-        if (!currentUserId.equals(cardUserId)) {
-            log.warn("Пользователь с ID {} пытается получить доступ к данным пользователя с ID {}", currentUserId, cardUserId);
-            throw new AccessDeniedException("Нет прав для доступа к этой карте");
-        }
-        log.debug("Пользователь с ID {} имеет доступ", currentUserId);
-    }
-
-    public Long getCurrentUserId() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) {
-            log.error("Пользователь не аутентифицирован");
-            throw new UserNotAuthenticatedException("Пользователь не аутентифицирован");
-        }
-        Object principal = auth.getPrincipal();
-        if (principal instanceof CustomUserDetails) {
-            Long id = ((CustomUserDetails) principal).getId();
-            log.debug("Текущий пользователь аутентифицирован с ID {}", id);
-            return id;
-        } else {
-            log.error("Принципал не является экземпляром CustomUserDetails");
-            throw new UserNotAuthenticatedException("Не удалось определить пользователя");
-        }
-    }
 
     private CardResponse mapToCardResponse(Card card, boolean showFullNumber) {
         String displayNumber = showFullNumber ? card.getCardNumber() : maskCardNumber(card.getCardNumber());
@@ -276,6 +242,18 @@ public class CardServiceImpl implements CardService {
             return "****";
         }
         return "**** **** **** " + cardNumber.substring(cardNumber.length() - 4);
+    }
+
+    private void validateCardId(Long cardId) {
+        if (cardId == null || cardId <= 0) {
+            throw new InvalidCardIdException("Некорректный ID карты");
+        }
+    }
+
+    private void validateUserId(Long userId) {
+        if (userId == null || userId <= 0) {
+            throw new InvalidUserIdException("Некорректный ID пользователя");
+        }
     }
 }
 
