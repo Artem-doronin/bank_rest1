@@ -46,7 +46,7 @@ public class UserController {
     @GetMapping("/getAll")
     @PreAuthorize("hasAnyRole( 'ADMIN')")
     @Operation(summary = "Получить всех пользователей ", description = "Доступно только администраторам")
-    public List<UserDto> getAllCards() {
+    public List<UserDto> getAllUsers() {
         return userService.getAllUsers();
     }
 }

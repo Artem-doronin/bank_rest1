@@ -41,7 +41,7 @@ import java.util.List;
 public class CardController {
     private final CardService cardService;
 
-    @PostMapping
+    @PostMapping("/create")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Создать новую карту", description = "Доступно только администраторам")
     public ResponseEntity<CardResponse> createCard(@Valid @RequestBody CardCreateRequest request) {

@@ -20,7 +20,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class SecurityConfig {
     private final CustomUserDetailsService userDetailsService;
-    private final JwtAuthenticationFilter jwtAuthFilter;// (1) Добавляем JWT-фильтр
+    private final JwtAuthenticationFilter jwtAuthFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -29,8 +29,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests()
                 .requestMatchers(
                         "/api/auth/**",
-                        "/swagger-ui/**", // (2) Если используете Swagger
-                        "/v3/api-docs/**" // (3) OpenAPI документация
+                        "/swagger-ui/**",
+                        "/v3/api-docs/**"
                 ).permitAll()
                 .anyRequest().authenticated()
                 .and()
@@ -38,7 +38,7 @@ public class SecurityConfig {
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                .exceptionHandling() // (4) Обработка ошибок аутентификации/авторизации
+                .exceptionHandling()
                 .authenticationEntryPoint((req, res, ex) -> res.sendError(401, "Unauthorized"))
                 .accessDeniedHandler((req, res, ex) -> res.sendError(403, "Forbidden"))
                 .and()
@@ -55,12 +55,12 @@ public class SecurityConfig {
     ) throws Exception {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(userDetailsService);
-        provider.setPasswordEncoder(passwordEncoder); // Важно!
+        provider.setPasswordEncoder(passwordEncoder);
         return new ProviderManager(provider);
     }
 
     @Bean
-    public PasswordEncoder passwordEncoder() { // (5) Если используется аутентификация по паролю
+    public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 }

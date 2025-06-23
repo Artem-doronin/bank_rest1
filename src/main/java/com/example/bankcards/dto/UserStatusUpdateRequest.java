@@ -10,4 +10,11 @@ import lombok.Data;
 public class UserStatusUpdateRequest {
     @NotNull(message = "Status must be provided")
     private UserStatus status;
+
+    public UserStatusUpdateRequest(UserStatus status) {
+        this.status = status;
+    }
+
+    public UserStatusUpdateRequest() {
+    }
 }
