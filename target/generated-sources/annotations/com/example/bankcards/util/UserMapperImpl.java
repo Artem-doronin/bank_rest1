@@ -2,14 +2,12 @@ package com.example.bankcards.util;
 
 import com.example.bankcards.dto.UserDto;
 import com.example.bankcards.entity.User;
-import com.example.bankcards.entity.UserStatus;
-import java.util.Set;
 import javax.annotation.processing.Generated;
 import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-06-23T18:31:30+0500",
+    date = "2025-06-23T22:56:42+0500",
     comments = "version: 1.6.3, compiler: javac, environment: Java 23 (Oracle Corporation)"
 )
 @Component
@@ -21,19 +19,15 @@ public class UserMapperImpl implements UserMapper {
             return null;
         }
 
-        Long id = null;
-        String username = null;
-        UserStatus status = null;
+        UserDto.UserDtoBuilder userDto = UserDto.builder();
 
-        id = user.getId();
-        username = user.getUsername();
-        status = user.getStatus();
+        userDto.id( user.getId() );
+        userDto.username( user.getUsername() );
+        userDto.status( user.getStatus() );
 
-        Set<Long> rolesId = mapRolesToIds(user.getRoles());
-        Set<Long> cardsId = mapCardsToIds(user.getCards());
+        userDto.rolesId( mapRolesToIds(user.getRoles()) );
+        userDto.cardsId( mapCardsToIds(user.getCards()) );
 
-        UserDto userDto = new UserDto( id, username, rolesId, cardsId, status );
-
-        return userDto;
+        return userDto.build();
     }
 }
