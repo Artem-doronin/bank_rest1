@@ -1,6 +1,7 @@
 package com.example.bankcards.service;
 
 import com.example.bankcards.dto.CardCreateRequest;
+import com.example.bankcards.dto.CardFilter;
 import com.example.bankcards.dto.CardResponse;
 import com.example.bankcards.dto.CardStatusUpdateRequest;
 import com.example.bankcards.dto.TransferRequest;
@@ -25,6 +26,10 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -41,7 +46,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 
 @ExtendWith(MockitoExtension.class)
 public class CardImplServiceTest {
@@ -145,6 +149,48 @@ public class CardImplServiceTest {
     }
 
     @Test
+    public void testPositiveDeleteCard(){
+        Card card = createCard();
+        when(cardRepository.findById(1L)).thenReturn(Optional.of(card));
+        doNothing().when(securityAccessService).checkUserAccess(1L);
+
+        cardService.deleteCard(1L);
+
+        verify(cardRepository, times(1)).delete(card);
+
+    }
+
+    @Test
+    public void testPositiveGetAllCards(){
+        Card card = createCard();
+        when(cardRepository.findAll()).thenReturn(List.of(card));
+
+        List<CardResponse> cardResponses = cardService.getAllCards();
+
+        assertEquals(cardResponses.size(), 1);
+        assertEquals(cardResponses.get(0).getId(), card.getId());
+    }
+
+    @Test
+    public void testPositiveGetUserCards(){
+        CardFilter cardFilter = createCardFilter();
+        Pageable pageable = PageRequest.of(0, 10);
+        Card card = createCard();
+        Page<Card> cards = new PageImpl<>(List.of(createCard()));
+
+        when(securityAccessService.getCurrentUserId()).thenReturn(1L);
+
+        when(cardRepository.findByUserIdAndCardNumber(1L,
+                cardFilter.cardNumber(),pageable)).thenReturn(cards);
+
+        Page<CardResponse> result = cardService.getUserCards(cardFilter,pageable);
+
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+        assertEquals(card.getId(), result.getContent().get(0).getId());
+    }
+
+    @Test
     public void testNegativeTransferFundsSourceNoActive() {
         TransferRequest request = createTransferRequest();
         Card sourceCard = createCard();
@@ -204,6 +250,17 @@ public class CardImplServiceTest {
     public void testNegativeUpdateCardStatusCardIdNotFound() {
         assertThrows(InvalidCardIdException.class,
                 () -> cardService.updateCardStatus(null, createCardStatusUpdateRequest()));
+    }
+    @Test
+    public void testNegativeDeleteCardCardIdIsNegative() {
+        assertThrows(InvalidCardIdException.class,
+                () -> cardService.deleteCard(-1L));
+    }
+
+    @Test
+    public void testNegativeDeleteCardCardIdNotFound() {
+        assertThrows(InvalidCardIdException.class,
+                () -> cardService.deleteCard(null));
     }
 
     @Test
@@ -302,6 +359,11 @@ public class CardImplServiceTest {
                 .destinationCardId(2L)
                 .amount(new BigDecimal(100))
                 .description("test")
+                .build();
+    }
+    private CardFilter createCardFilter(){
+        return CardFilter.builder()
+                .cardNumber("1234")
                 .build();
     }
 }
